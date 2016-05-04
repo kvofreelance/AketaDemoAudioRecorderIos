@@ -42,19 +42,42 @@
 {
     if([_loginEditText.text isEqualToString:@""] || [_passwordEditText.text isEqualToString:@""]) {
         [_statusLabel setText:@"Please fill up all fields"];
+        
+        UIStoryboard *sb = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+        UIViewController *vc = [sb instantiateViewControllerWithIdentifier:@"recordView"];
+        vc.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;
+        [self presentViewController:vc animated:YES completion:NULL];
+        
         return;
     }
     
-    NSString *postValues = [NSString stringWithFormat:@"{\"username\"=\"%@\", \"password\"=\"%@\"}",_loginEditText.text,_passwordEditText.text];
-    NSData *postData = [postValues dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
+    NSString *authBasicStr = [NSString stringWithFormat:@"%@:%@", @"Aketa", @"Aketa"];
+    NSString *authValue = [NSString stringWithFormat:@"Basic %@", [[authBasicStr dataUsingEncoding:NSUTF8StringEncoding] base64Encoding]];
+    
+    //NSASCIIStringEncoding
+    
+    NSString *postValues = [NSString stringWithFormat:@"{\"login\":\"%@\",\"password\":\"%@\"}",_loginEditText.text,_passwordEditText.text];
+    
+    //NSData *postData = [postValues dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
+    NSData *postData = [postValues dataUsingEncoding:NSUTF8StringEncoding];
     NSString *postLength = [NSString stringWithFormat:@"%d",[postData length]];
     
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
     [request setURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.lybs.fr/AketaDemo/rest/session/login"]]];
     [request setHTTPMethod:@"POST"];
+    
     [request setValue:postLength forHTTPHeaderField:@"Content-Length"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    [request setValue:authValue forHTTPHeaderField:@"Authorization"];
+    [request setValue:@"AketaUser" forHTTPHeaderField:@"User-Agent"];
+    [request setValue:@"no-cache" forHTTPHeaderField:@"Pragma"];
+    [request setValue:@"no-cache" forHTTPHeaderField:@"Cache-Control"];
+    [request setValue:@"en-US,en;q=0.8,ru;q=0.6,uk;q=0.4" forHTTPHeaderField:@"Accept-Language"];
+
     [request setHTTPBody:postData];
+    
+    NSLog(@"Basic value: %@", authValue);
+
     
     NSURLConnection *conn = [[NSURLConnection alloc]initWithRequest:request delegate:self];
     if(conn) {
@@ -73,10 +96,26 @@
     [_loginBtn setEnabled:YES];
     [_statusLabel setText:@"Connection success"];
     
-    UIStoryboard *sb = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
-    UIViewController *vc = [sb instantiateViewControllerWithIdentifier:@"recordView"];
-    vc.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;
-    [self presentViewController:vc animated:YES completion:NULL];
+    NSError *error = nil;
+    id jsonData = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+    
+    if(error) {
+        [_statusLabel setText:@"JSON parse error"];
+    }
+    
+    if([jsonData isKindOfClass:[NSDictionary class]])
+    {
+        NSDictionary *dict = jsonData;
+        
+        if([dict valueForKey:@"message"]) {
+            [_statusLabel setText:[dict valueForKey:@"message"]];
+        } else {
+            UIStoryboard *sb = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+            UIViewController *vc = [sb instantiateViewControllerWithIdentifier:@"recordView"];
+            vc.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;
+            [self presentViewController:vc animated:YES completion:NULL];
+        }
+    }
 }
 
 // This method receives the error report in case of connection is not made to server.
@@ -84,6 +123,7 @@
 {
     [_loginBtn setEnabled:YES];
     [_statusLabel setText:[NSString stringWithFormat:@"Error: %@", error.description]];
+    [_statusLabel sizeToFit];
 }
 
 - (void)didReceiveMemoryWarning {

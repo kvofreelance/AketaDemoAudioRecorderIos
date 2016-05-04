@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 
-#define RECAUDIOFILE @"aketa_audio.m4a"
+#define RECAUDIOFILE @"aketa_audio.wav"
 
 @interface ViewController : UIViewController <AVAudioRecorderDelegate, AVAudioPlayerDelegate> {
     AVAudioRecorder *recorder;
@@ -21,6 +21,10 @@
 @property (strong, nonatomic) IBOutlet UIButton *actionBtn;
 @property (strong, nonatomic) IBOutlet UIButton *playBtn;
 @property (strong, nonatomic) IBOutlet UILabel *statusLabel;
+@property (strong, nonatomic) IBOutlet UILabel *statusLabelConnection;
+@property (strong, nonatomic) IBOutlet UITextField *pinEditText;
+@property (strong, nonatomic) IBOutlet UIButton *logInBtn;
+
 
 @end
 
